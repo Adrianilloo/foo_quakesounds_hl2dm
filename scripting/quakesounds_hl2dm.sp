@@ -701,23 +701,40 @@ public PlayQuakeSound(soundKey, killsValue, attackerClient, victimClient)
 
 PlaySoundFile(client, soundKey, killsValue, setsFileIndices[MAX_NUM_SETS] = { -1, ... })
 {
-	if (soundPreference[client] > -1)
+	int clientSoundPref = soundPreference[client];
+
+	if (clientSoundPref > -1)
 	{
-		if (setsFileIndices[soundPreference[client]] == -1)
+		if (setsFileIndices[clientSoundPref] == -1)
 		{
-			new Handle:soundList = soundLists[soundKey][killsValue][soundPreference[client]];
+			new Handle:soundList = soundLists[soundKey][killsValue][clientSoundPref];
 
 			if (soundList == INVALID_HANDLE)
 			{
 				return;
 			}
 
-			setsFileIndices[soundPreference[client]] = GetArrayCell(soundList,
-				GetURandomInt() % GetArraySize(soundList));
+			setsFileIndices[clientSoundPref] = GetArrayCell(soundList, GetURandomInt() % GetArraySize(soundList));
 		}
 
-		EmitSoundToClient(client, soundsFiles[setsFileIndices[soundPreference[client]]],
-			_, _, _, _, GetConVarFloat(cvarVolume));
+		StopSound(client, SNDCHAN_AUTO, soundsFiles[setsFileIndices[clientSoundPref]]);
+
+		// Delay sound emission, to prevent possible cases where the stop command arrives later to the client
+		DataPack data;
+		CreateDataTimer(0.0, EmitQuakeSoundToClient, data, TIMER_FLAG_NO_MAPCHANGE);
+		data.WriteCell(GetClientUserId(client));
+		data.WriteCell(setsFileIndices[clientSoundPref]);
+	}
+}
+
+Action EmitQuakeSoundToClient(Handle timer, DataPack data)
+{
+	data.Reset();
+	int client = GetClientOfUserId(data.ReadCell());
+
+	if (client > 0)
+	{
+		EmitSoundToClient(client, soundsFiles[data.ReadCell()], _, _, _, _, GetConVarFloat(cvarVolume));
 	}
 }
 
