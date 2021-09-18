@@ -513,6 +513,12 @@ public OnTraceAttack(victim, attacker, inflictor, Float:damage, damagetype, ammo
 {
 	decho(0, "OnTraceAttack: attacker=%d victim=%d hitgroup=%d hitbox=%d",attacker, victim, hitgroup,hitbox);
 	hurtHitGroup[victim] = hitgroup;
+
+	if (hitgroup == HITGROUP_HEAD && !(damagetype & DMG_BULLET))
+	{
+		LogError("Non DMG_BULLET damage type produced an impact on head!! (damage type = %i, ammotype = %i)",
+			damagetype, ammotype);
+	}
 }
 #endif
 
